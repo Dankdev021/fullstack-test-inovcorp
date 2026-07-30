@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Contracts\Repositories\ProjectRepository;
-use App\DataTransferObjects\CreateProjectData;
+use App\DTOs\CreateProjectData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ListProjectsRequest;
 use App\Http\Requests\StoreProjectRequest;

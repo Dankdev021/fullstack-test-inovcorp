@@ -2,9 +2,9 @@
 
 namespace App\Contracts\Repositories;
 
-use App\DataTransferObjects\CreateTaskData;
-use App\DataTransferObjects\TaskFiltersData;
-use App\DataTransferObjects\UpdateTaskData;
+use App\DTOs\CreateTaskData;
+use App\DTOs\TaskFiltersData;
+use App\DTOs\UpdateTaskData;
 use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;

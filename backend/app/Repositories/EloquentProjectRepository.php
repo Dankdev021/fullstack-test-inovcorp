@@ -3,7 +3,7 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\ProjectRepository;
-use App\DataTransferObjects\CreateProjectData;
+use App\DTOs\CreateProjectData;
 use App\Models\Project;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 

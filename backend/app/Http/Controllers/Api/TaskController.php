@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Contracts\Repositories\TaskRepository;
-use App\DataTransferObjects\UpdateTaskData;
+use App\DTOs\UpdateTaskData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Resources\TaskResource;

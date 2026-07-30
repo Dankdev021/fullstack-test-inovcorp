@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #0c66e4;
+  --color-brand-hover: #0052cc;
+  --color-brand-dark: #0747a6;
+  --color-brand-soft: #e9f2ff;
+  --color-ink: #172b4d;
+  --color-muted: #44546f;
+  --color-subtle: #626f86;
+  --color-border: #dcdfe4;
+  --color-surface: #f7f8f9;
+  --color-success: #1f845a;
+  --color-success-soft: #dffcf0;
+  --color-danger: #c9372c;
+  --color-danger-soft: #ffeceb;
+  --color-warning: #974f0c;
+  --color-warning-soft: #fff7d6;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+  --shadow-card: 0 1px 2px rgb(9 30 66 / 15%), 0 0 1px rgb(9 30 66 / 31%);
+  --shadow-overlay: 0 8px 24px rgb(9 30 66 / 25%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: var(--color-surface);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8;
+  }
+
+  .btn-primary {
+    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-secondary {
+    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-sm border border-border bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-ghost {
+    @apply inline-flex min-h-9 items-center justify-center gap-2 rounded-sm px-3 py-1.5 text-sm font-semibold text-muted transition hover:bg-brand-soft hover:text-brand-dark;
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-sm font-semibold text-ink;
+  }
+
+  .field-control {
+    @apply w-full rounded-sm border border-border bg-white px-3 py-2.5 text-sm text-ink transition placeholder:text-subtle focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand;
+  }
+}

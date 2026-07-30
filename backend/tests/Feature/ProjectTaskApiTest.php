@@ -99,6 +99,24 @@ class ProjectTaskApiTest extends TestCase
             ->assertJsonPath('data.priority', TaskPriority::High->value);
     }
 
+    public function test_project_cannot_have_more_than_two_hundred_tasks(): void
+    {
+        $project = Project::factory()->create();
+        Task::factory()->count(200)->for($project)->create();
+
+        $this->getJson("/api/projects/{$project->id}/tasks?per_page=200")
+            ->assertOk()
+            ->assertJsonCount(200, 'data')
+            ->assertJsonPath('meta.per_page', 200);
+
+        $this->postJson("/api/projects/{$project->id}/tasks", [
+            'title' => 'Tarefa excedente',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('project');
+
+        $this->assertCount(200, $project->tasks()->get());
+    }
+
     public function test_task_status_and_priority_can_be_updated(): void
     {
         $task = Task::factory()->create([

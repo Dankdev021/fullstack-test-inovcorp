@@ -19,7 +19,7 @@ export function useProjects() {
     projectsError,
   } = storeToRefs(store)
 
-  async function fetchProjects(page = 1, perPage = 12): Promise<void> {
+  async function fetchProjects(page = 1, perPage = 9): Promise<void> {
     store.projectsLoading = true
     store.projectsError = ''
 

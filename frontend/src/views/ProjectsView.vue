@@ -60,7 +60,7 @@ onMounted(() => fetchProjects())
 </script>
 
 <template>
-  <main class="container-page">
+  <main class="container-page flex min-h-[calc(100dvh-3.5rem)] flex-col sm:min-h-[calc(100dvh-4rem)]">
     <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <p class="text-sm font-semibold text-brand">Visão geral</p>
@@ -75,7 +75,7 @@ onMounted(() => fetchProjects())
       </button>
     </div>
 
-    <section class="mt-8" aria-live="polite">
+    <section class="mt-8 flex flex-1 flex-col" aria-live="polite">
       <div v-if="loading" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div
           v-for="item in 6"
@@ -110,7 +110,7 @@ onMounted(() => fetchProjects())
         <ProjectCard v-for="project in projects" :key="project.id" :project="project" />
       </TransitionGroup>
 
-      <nav v-if="pagination.last_page > 1" class="mt-8 flex items-center justify-center gap-3" aria-label="Paginação">
+      <nav class="mt-auto flex items-center justify-center gap-3 pt-8" aria-label="Paginação">
         <button
           type="button"
           class="btn-secondary"

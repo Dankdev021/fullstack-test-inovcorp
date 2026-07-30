@@ -172,7 +172,9 @@ Tarefas:
 GET /api/projects/1/tasks?status=todo&priority=high&per_page=15
 ```
 
-As listagens utilizam paginação por offset. O parâmetro `per_page` aceita valores entre 1 e 100.
+As listagens utilizam paginação por offset. Projetos aceitam `per_page` entre 1 e 100 e tarefas entre 1 e 200.
+
+Cada projeto aceita no máximo 200 tarefas, distribuídas livremente entre as colunas do Kanban.
 
 Valores aceitos:
 
@@ -221,7 +223,7 @@ Pinia mantém o estado compartilhado de projetos, tarefas e notificações. Os c
 
 A mudança de status é otimista para produzir resposta imediata. Se a API falhar, o estado anterior é restaurado e o usuário recebe uma notificação.
 
-As respostas antigas dos filtros são ignoradas para evitar condições de corrida durante alterações rápidas. O Kanban carrega até 100 tarefas por projeto para manter todas as colunas sincronizadas sem paginação visual.
+As respostas antigas dos filtros são ignoradas para evitar condições de corrida durante alterações rápidas. O Kanban carrega as 200 tarefas permitidas por projeto para manter todas as colunas sincronizadas sem paginação visual.
 
 ### Testes
 
@@ -241,7 +243,7 @@ A API permite atualizar status e prioridade da tarefa, conforme solicitado. Edi�
 
 ### Paginação visual das tarefas
 
-A API possui paginação, mas o Kanban carrega até 100 tarefas por projeto. Paginar cada coluna de forma independente adicionaria complexidade ao drag-and-drop e poderia ocultar tarefas durante filtros ou movimentações. Para um gerenciador simplificado, o limite atual mantém o comportamento previsível.
+A API possui paginação, mas o Kanban carrega todas as tarefas do projeto, respeitando o limite de 200. Paginar cada coluna de forma independente adicionaria complexidade ao drag-and-drop e poderia ocultar tarefas durante filtros ou movimentações. Para um gerenciador simplificado, o limite atual mantém o comportamento previsível.
 
 ### CI/CD e publicação
 

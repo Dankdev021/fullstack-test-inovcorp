@@ -29,6 +29,7 @@ const {
 } = useTask()
 
 const project = computed(() => findProject(projectId.value))
+const taskLimitReached = computed(() => (project.value?.tasks_count ?? 0) >= 200)
 const modalOpen = ref(false)
 const submitting = ref(false)
 const validationErrors = ref<ValidationErrors>({})
@@ -71,6 +72,10 @@ watch(
 )
 
 function openModal(): void {
+  if (taskLimitReached.value) {
+    return
+  }
+
   validationErrors.value = {}
   modalOpen.value = true
 }
@@ -196,9 +201,14 @@ onBeforeUnmount(() => {
           <h1 class="mt-2 text-xl font-bold tracking-tight text-ink sm:text-2xl">{{ project.name }}</h1>
           <p class="mt-2 max-w-3xl text-sm leading-6 text-muted sm:text-base">{{ project.description }}</p>
         </div>
-        <button type="button" class="btn-primary w-full shrink-0 sm:w-auto" @click="openModal">
+        <button
+          type="button"
+          class="btn-primary w-full shrink-0 sm:w-auto"
+          :disabled="taskLimitReached"
+          @click="openModal"
+        >
           <span class="text-xl leading-none">+</span>
-          Nova tarefa
+          {{ taskLimitReached ? 'Limite de 200 tarefas' : 'Nova tarefa' }}
         </button>
       </div>
     </section>
@@ -296,6 +306,13 @@ onBeforeUnmount(() => {
 
     <BaseModal :open="modalOpen" title="Criar tarefa" @close="closeModal">
       <form class="space-y-4" @submit.prevent="submit">
+        <p
+          v-if="validationErrors.project"
+          class="rounded-sm border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
+          {{ validationErrors.project[0] }}
+        </p>
+
         <div>
           <label for="task-title" class="field-label">Título</label>
           <input

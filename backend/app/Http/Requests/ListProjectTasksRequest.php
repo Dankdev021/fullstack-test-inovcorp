@@ -19,7 +19,7 @@ class ListProjectTasksRequest extends FormRequest
         return [
             'status' => ['nullable', Rule::enum(TaskStatus::class)],
             'priority' => ['nullable', Rule::enum(TaskPriority::class)],
-            'per_page' => ['sometimes', 'integer', 'between:1,100'],
+            'per_page' => ['sometimes', 'integer', 'between:1,200'],
         ];
     }
 }

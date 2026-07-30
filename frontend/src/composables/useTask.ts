@@ -27,7 +27,7 @@ export function useTask() {
     const requestId = ++latestRequest
     const query = new URLSearchParams({
       page: String(page),
-      per_page: '100',
+      per_page: '200',
     })
 
     if (filters.status) {
@@ -112,12 +112,22 @@ export function useTask() {
   }
 
   async function deleteTask(taskId: number): Promise<void> {
+    const task = store.tasks.find((item) => item.id === taskId)
     store.updatingTaskIds.push(taskId)
 
     try {
       await api.delete(`/tasks/${taskId}`)
       store.tasks = store.tasks.filter((task) => task.id !== taskId)
       store.tasksPagination.total = Math.max(0, store.tasksPagination.total - 1)
+
+      if (task) {
+        const project = store.findProject(task.project_id)
+
+        if (project) {
+          project.tasks_count = Math.max(0, project.tasks_count - 1)
+        }
+      }
+
       notifications.success('Tarefa excluída.')
     } catch (error) {
       const message = error instanceof ApiError ? error.message : 'Não foi possível excluir a tarefa.'

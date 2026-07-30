@@ -43,13 +43,13 @@ describe('useTask', () => {
     expect(store.updatingTaskIds).toEqual([])
   })
 
-  it('carrega até cem tarefas para o quadro', async () => {
+  it('carrega até duzentas tarefas para o quadro', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       data: [],
       meta: {
         current_page: 1,
         last_page: 1,
-        per_page: 100,
+        per_page: 200,
         total: 0,
       },
     }), {
@@ -61,6 +61,6 @@ describe('useTask', () => {
 
     await fetchTasks(1, { status: '', priority: '' })
 
-    expect(fetchMock.mock.calls[0][0]).toContain('per_page=100')
+    expect(fetchMock.mock.calls[0][0]).toContain('per_page=200')
   })
 })

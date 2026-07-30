@@ -27,7 +27,7 @@ export function useTask() {
     const requestId = ++latestRequest
     const query = new URLSearchParams({
       page: String(page),
-      per_page: '20',
+      per_page: '100',
     })
 
     if (filters.status) {

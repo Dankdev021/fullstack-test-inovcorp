@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import BaseModal from '../components/BaseModal.vue'
-import TaskCard from '../components/TaskCard.vue'
+import KanbanColumn from '../components/KanbanColumn.vue'
 import { useDebounce } from '../composables/useDebounce'
 import { useProjects } from '../composables/useProjects'
 import { useTask } from '../composables/useTask'
@@ -19,7 +19,6 @@ const projectId = computed(() => Number(route.params.id))
 const { projects, loading: projectsLoading, fetchProjects, findProject } = useProjects()
 const {
   tasks,
-  pagination,
   loading,
   error,
   updatingTaskIds,
@@ -44,6 +43,23 @@ const form = reactive<CreateTaskInput>({
   priority: 'medium',
   due_date: null,
 })
+const draggedTaskId = ref<number | null>(null)
+const columns: Array<{
+  status: TaskStatus
+  title: string
+  accentClass: string
+}> = [
+  { status: 'todo', title: 'A fazer', accentClass: 'bg-slate-400' },
+  { status: 'in_progress', title: 'Em andamento', accentClass: 'bg-brand' },
+  { status: 'in_testing', title: 'Em testes', accentClass: 'bg-violet-500' },
+  { status: 'done', title: 'Concluído', accentClass: 'bg-success' },
+]
+const tasksByStatus = computed(() => Object.fromEntries(
+  columns.map((column) => [
+    column.status,
+    tasks.value.filter((task) => task.status === column.status),
+  ]),
+) as Record<TaskStatus, typeof tasks.value>)
 
 const debouncedFetch = useDebounce(() => {
   void fetchTasks(projectId.value, filters)
@@ -93,11 +109,44 @@ async function submit(): Promise<void> {
 }
 
 async function changeStatus(taskId: number, status: TaskStatus): Promise<void> {
+  const task = tasks.value.find((item) => item.id === taskId)
+
+  if (!task || task.status === status) {
+    return
+  }
+
   await updateTaskStatus(taskId, status)
 
   if (filters.status) {
     await fetchTasks(projectId.value, filters)
   }
+}
+
+function startDragging(taskId: number, event: DragEvent): void {
+  draggedTaskId.value = taskId
+
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(taskId))
+  }
+}
+
+function stopDragging(): void {
+  draggedTaskId.value = null
+}
+
+async function dropTask(status: TaskStatus): Promise<void> {
+  const taskId = draggedTaskId.value
+  draggedTaskId.value = null
+
+  if (taskId !== null) {
+    await changeStatus(taskId, status)
+  }
+}
+
+function clearFilters(): void {
+  filters.status = ''
+  filters.priority = ''
 }
 
 async function removeTask(taskId: number): Promise<void> {
@@ -107,17 +156,23 @@ async function removeTask(taskId: number): Promise<void> {
 }
 
 onMounted(async () => {
+  document.body.style.overflow = 'hidden'
+
   if (projects.value.length === 0) {
     await fetchProjects(1, 100)
   }
 
   await fetchTasks(projectId.value, filters)
 })
+
+onBeforeUnmount(() => {
+  document.body.style.overflow = ''
+})
 </script>
 
 <template>
-  <main class="container-page">
-    <RouterLink to="/" class="btn-ghost -ml-3 mb-4">
+  <main class="mx-auto flex h-[calc(100dvh-3.5rem)] min-h-0 w-full max-w-7xl flex-col overflow-hidden px-4 py-3 sm:h-[calc(100dvh-4rem)] sm:px-6 sm:py-4 lg:px-8">
+    <RouterLink to="/" class="btn-ghost -ml-3 mb-2 shrink-0">
       <svg viewBox="0 0 24 24" class="size-4" aria-hidden="true">
         <path fill="currentColor" d="m14.7 5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4L8 12l6.7-6.7Z" />
       </svg>
@@ -126,7 +181,7 @@ onMounted(async () => {
 
     <div v-if="projectsLoading && !project" class="h-28 animate-pulse rounded-md bg-white shadow-card" />
 
-    <section v-else-if="project" class="rounded-md border border-border bg-white p-5 shadow-card sm:p-6">
+    <section v-else-if="project" class="shrink-0 rounded-md border border-border bg-white p-4 shadow-card">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-3">
@@ -138,7 +193,7 @@ onMounted(async () => {
             </span>
             <span class="text-sm text-subtle">{{ project.tasks_count }} tarefas</span>
           </div>
-          <h1 class="mt-3 text-2xl font-bold tracking-tight text-ink sm:text-3xl">{{ project.name }}</h1>
+          <h1 class="mt-2 text-xl font-bold tracking-tight text-ink sm:text-2xl">{{ project.name }}</h1>
           <p class="mt-2 max-w-3xl text-sm leading-6 text-muted sm:text-base">{{ project.description }}</p>
         </div>
         <button type="button" class="btn-primary w-full shrink-0 sm:w-auto" @click="openModal">
@@ -153,45 +208,49 @@ onMounted(async () => {
       <RouterLink to="/" class="btn-secondary mt-4">Voltar para projetos</RouterLink>
     </section>
 
-    <section v-if="project" class="mt-6">
-      <div class="rounded-md border border-border bg-white p-4 shadow-card">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div class="flex-1">
-            <label for="filter-status" class="field-label">Filtrar por status</label>
-            <select id="filter-status" v-model="filters.status" class="field-control">
-              <option value="">Todos os status</option>
-              <option value="todo">A fazer</option>
-              <option value="in_progress">Em andamento</option>
-              <option value="done">Concluída</option>
-            </select>
-          </div>
-          <div class="flex-1">
-            <label for="filter-priority" class="field-label">Filtrar por prioridade</label>
-            <select id="filter-priority" v-model="filters.priority" class="field-control">
-              <option value="">Todas as prioridades</option>
-              <option value="low">Baixa</option>
-              <option value="medium">Média</option>
-              <option value="high">Alta</option>
-            </select>
-          </div>
+    <section v-if="project" class="mt-4 flex min-h-0 flex-1 flex-col">
+      <div class="shrink-0 rounded-md border border-border bg-white p-3 shadow-card">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="inline-flex min-h-9 items-center gap-2 px-2 text-sm font-semibold text-muted">
+            <svg viewBox="0 0 24 24" class="size-4" aria-hidden="true">
+              <path fill="currentColor" d="M3 5h18v2H3V5Zm3 6h12v2H6v-2Zm4 6h4v2h-4v-2Z" />
+            </svg>
+            Filtros
+          </span>
+          <label for="filter-status" class="sr-only">Filtrar por status</label>
+          <select id="filter-status" v-model="filters.status" class="field-control min-h-9 w-full py-1.5 sm:w-auto">
+            <option value="">Todos os status</option>
+            <option value="todo">A fazer</option>
+            <option value="in_progress">Em andamento</option>
+            <option value="in_testing">Em testes</option>
+            <option value="done">Concluído</option>
+          </select>
+          <label for="filter-priority" class="sr-only">Filtrar por prioridade</label>
+          <select id="filter-priority" v-model="filters.priority" class="field-control min-h-9 w-full py-1.5 sm:w-auto">
+            <option value="">Todas as prioridades</option>
+            <option value="low">Baixa</option>
+            <option value="medium">Média</option>
+            <option value="high">Alta</option>
+          </select>
           <button
             v-if="filters.status || filters.priority"
             type="button"
-            class="btn-secondary"
-            @click="filters.status = ''; filters.priority = ''"
+            class="btn-ghost w-full sm:w-auto"
+            @click="clearFilters"
           >
             Limpar filtros
           </button>
+          <span class="ml-auto hidden text-xs text-subtle sm:inline">
+            {{ tasks.length }} de {{ project.tasks_count }} tarefas
+          </span>
         </div>
       </div>
 
-      <div class="mt-5" aria-live="polite">
-        <div v-if="loading" class="grid gap-4 lg:grid-cols-2">
-          <div v-for="item in 4" :key="item" class="h-56 animate-pulse rounded-md border border-border bg-white p-5 shadow-card">
-            <div class="h-6 w-16 rounded-full bg-slate-200" />
-            <div class="mt-5 h-5 w-2/3 rounded bg-slate-200" />
-            <div class="mt-3 h-4 w-full rounded bg-slate-100" />
-            <div class="mt-2 h-4 w-4/5 rounded bg-slate-100" />
+      <div class="mt-4 min-h-0 flex-1" aria-live="polite">
+        <div v-if="loading" class="flex h-full gap-4 overflow-hidden">
+          <div v-for="item in 4" :key="item" class="h-full w-[min(82vw,19rem)] shrink-0 animate-pulse rounded-lg border border-border bg-slate-100 p-3 sm:w-80">
+            <div class="h-4 w-28 rounded bg-slate-200" />
+            <div class="mt-5 h-40 rounded-md bg-white" />
           </div>
         </div>
 
@@ -200,7 +259,7 @@ onMounted(async () => {
           <button type="button" class="btn-secondary mt-4" @click="fetchTasks(projectId, filters)">Tentar novamente</button>
         </div>
 
-        <div v-else-if="tasks.length === 0" class="rounded-md border border-dashed border-border bg-white px-5 py-12 text-center">
+        <div v-else-if="tasks.length === 0" class="grid h-full place-content-center rounded-md border border-dashed border-border bg-white px-5 py-8 text-center">
           <span class="mx-auto grid size-12 place-items-center rounded-full bg-brand-soft text-brand">
             <svg viewBox="0 0 24 24" class="size-6" aria-hidden="true">
               <path fill="currentColor" d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2 5v2h10V8H7Zm0 6v2h7v-2H7Z" />
@@ -214,37 +273,25 @@ onMounted(async () => {
           </p>
         </div>
 
-        <TransitionGroup v-else name="tasks" tag="div" class="grid gap-4 lg:grid-cols-2">
-          <TaskCard
-            v-for="task in tasks"
-            :key="task.id"
-            :task="task"
-            :updating="updatingTaskIds.includes(task.id)"
-            @change-status="changeStatus(task.id, $event)"
-            @delete="removeTask(task.id)"
-          />
-        </TransitionGroup>
+        <div v-else class="-mx-4 h-full overflow-x-auto overflow-y-hidden px-4 pb-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+          <div class="flex h-full min-w-max items-stretch gap-4">
+            <KanbanColumn
+              v-for="column in columns"
+              :key="column.status"
+              :title="column.title"
+              :status="column.status"
+              :tasks="tasksByStatus[column.status]"
+              :updating-task-ids="updatingTaskIds"
+              :accent-class="column.accentClass"
+              @drag-task="startDragging"
+              @drag-end="stopDragging"
+              @drop-task="dropTask"
+              @change-status="changeStatus"
+              @delete-task="removeTask"
+            />
+          </div>
+        </div>
       </div>
-
-      <nav v-if="pagination.last_page > 1" class="mt-8 flex items-center justify-center gap-3" aria-label="Paginação das tarefas">
-        <button
-          type="button"
-          class="btn-secondary"
-          :disabled="pagination.current_page === 1"
-          @click="fetchTasks(projectId, filters, pagination.current_page - 1)"
-        >
-          Anterior
-        </button>
-        <span class="text-sm text-muted">Página {{ pagination.current_page }} de {{ pagination.last_page }}</span>
-        <button
-          type="button"
-          class="btn-secondary"
-          :disabled="pagination.current_page === pagination.last_page"
-          @click="fetchTasks(projectId, filters, pagination.current_page + 1)"
-        >
-          Próxima
-        </button>
-      </nav>
     </section>
 
     <BaseModal :open="modalOpen" title="Criar tarefa" @close="closeModal">
@@ -279,7 +326,8 @@ onMounted(async () => {
             <select id="task-status" v-model="form.status" class="field-control">
               <option value="todo">A fazer</option>
               <option value="in_progress">Em andamento</option>
-              <option value="done">Concluída</option>
+              <option value="in_testing">Em testes</option>
+              <option value="done">Concluído</option>
             </select>
           </div>
           <div>
@@ -309,16 +357,3 @@ onMounted(async () => {
     </BaseModal>
   </main>
 </template>
-
-<style scoped>
-.tasks-enter-active,
-.tasks-leave-active {
-  transition: opacity 200ms ease, transform 200ms ease;
-}
-
-.tasks-enter-from,
-.tasks-leave-to {
-  opacity: 0;
-  transform: translateY(8px);
-}
-</style>

@@ -31,7 +31,7 @@ class DatabaseSeeder extends Seeder
                     [
                         'title' => 'Preparar ambiente de homologação',
                         'description' => 'Disponibilizar a aplicação para os testes internos.',
-                        'status' => TaskStatus::InProgress,
+                        'status' => TaskStatus::InTesting,
                         'priority' => TaskPriority::High,
                         'due_date' => today()->subDays(2),
                     ],

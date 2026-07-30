@@ -107,13 +107,13 @@ class ProjectTaskApiTest extends TestCase
         ]);
 
         $response = $this->patchJson("/api/tasks/{$task->id}", [
-            'status' => TaskStatus::InProgress->value,
+            'status' => TaskStatus::InTesting->value,
             'priority' => TaskPriority::High->value,
         ]);
 
         $response
             ->assertOk()
-            ->assertJsonPath('data.status', TaskStatus::InProgress->value)
+            ->assertJsonPath('data.status', TaskStatus::InTesting->value)
             ->assertJsonPath('data.priority', TaskPriority::High->value);
     }
 

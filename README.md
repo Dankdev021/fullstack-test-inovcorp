@@ -39,6 +39,8 @@ DELETE /api/tasks/{task}
 
 As listagens usam paginação por offset. A listagem de tarefas aceita os filtros `status`, `priority` e `per_page`.
 
+As tarefas usam os status `todo`, `in_progress`, `in_testing` e `done`.
+
 ### Arquitetura
 
 O backend utiliza enums para estados do domínio, DTOs para transferência de dados, contratos de repositório para abstrair a persistência, Form Requests para validação e API Resources para definir as respostas JSON.
@@ -78,10 +80,10 @@ npm run test
 - Composables para acesso à API e debounce
 - Tailwind CSS 4 com identidade visual inspirada no Jira
 - Atualização otimista ao alterar o status das tarefas
-- Dropdown para mudança de status em vez de drag-and-drop
+- Quadro Kanban responsivo com drag-and-drop nativo e alternativa por dropdown
+- Carregamento de até 100 tarefas por projeto no quadro, sem paginação visual
 - Vitest para testes dos composables
 
 ### Fora do escopo atual
 
 - Autenticação
-- Drag-and-drop de tarefas

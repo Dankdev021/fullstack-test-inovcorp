@@ -43,6 +43,22 @@ describe('useTask', () => {
     expect(store.updatingTaskIds).toEqual([])
   })
 
+  it('atualiza a prioridade com rollback em falha', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Falha de rede')))
+    const store = useProjectStore()
+    store.tasks = [{ ...task }]
+    const { updateTaskPriority } = useTask()
+
+    const request = updateTaskPriority(task.id, 'high')
+
+    expect(store.tasks[0].priority).toBe('high')
+
+    await request
+
+    expect(store.tasks[0].priority).toBe('medium')
+    expect(store.updatingTaskIds).toEqual([])
+  })
+
   it('carrega até duzentas tarefas para o quadro', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       data: [],

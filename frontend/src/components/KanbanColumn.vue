@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { Task, TaskStatus } from '../types'
+import type { Task, TaskPriority, TaskStatus } from '../types'
 import TaskCard from './TaskCard.vue'
 
 const props = defineProps<{
@@ -16,6 +16,7 @@ const emit = defineEmits<{
   dragTask: [taskId: number, event: DragEvent]
   dragEnd: []
   changeStatus: [taskId: number, status: TaskStatus]
+  changePriority: [taskId: number, priority: TaskPriority]
   deleteTask: [taskId: number]
 }>()
 
@@ -62,6 +63,7 @@ function dropTask(): void {
         @drag-start="emit('dragTask', task.id, $event)"
         @drag-end="emit('dragEnd')"
         @change-status="emit('changeStatus', task.id, $event)"
+        @change-priority="emit('changePriority', task.id, $event)"
         @delete="emit('deleteTask', task.id)"
       />
       <div

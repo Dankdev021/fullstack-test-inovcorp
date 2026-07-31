@@ -40,7 +40,7 @@ onBeforeUnmount(() => {
     <Transition name="modal">
       <div
         v-if="open"
-        class="fixed inset-0 z-50 grid items-end bg-ink/45 p-0 sm:place-items-center sm:p-4"
+        class="fixed inset-0 z-50 grid items-end bg-ink/25 p-0 backdrop-blur-[2px] sm:place-items-center sm:p-4"
         role="dialog"
         aria-modal="true"
         :aria-label="title"

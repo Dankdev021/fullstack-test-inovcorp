@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import type { Task, TaskStatus } from '../types'
+import type { Task, TaskPriority, TaskStatus } from '../types'
 
 const props = defineProps<{
   task: Task
@@ -9,6 +9,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   changeStatus: [status: TaskStatus]
+  changePriority: [priority: TaskPriority]
   delete: []
   dragStart: [event: DragEvent]
   dragEnd: []
@@ -21,7 +22,7 @@ const statusLabels: Record<TaskStatus, string> = {
   done: 'Concluído',
 }
 
-const priorityLabels = {
+const priorityLabels: Record<TaskPriority, string> = {
   low: 'Baixa',
   medium: 'Média',
   high: 'Alta',
@@ -41,6 +42,11 @@ function closeMenu(): void {
 function changeStatus(status: TaskStatus): void {
   closeMenu()
   emit('changeStatus', status)
+}
+
+function changePriority(priority: TaskPriority): void {
+  closeMenu()
+  emit('changePriority', priority)
 }
 
 function deleteTask(): void {
@@ -116,6 +122,19 @@ const visuallyOverdue = computed(() => props.task.is_overdue && props.task.statu
             @click="changeStatus(status)"
           >
             <span class="size-4 text-brand">{{ task.status === status ? '✓' : '' }}</span>
+            {{ label }}
+          </button>
+          <div class="my-1 border-t border-border" />
+          <p class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-subtle">Prioridade</p>
+          <button
+            v-for="(label, priority) in priorityLabels"
+            :key="priority"
+            type="button"
+            class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-ink transition hover:bg-brand-soft"
+            :class="{ 'bg-surface font-semibold': task.priority === priority }"
+            @click="changePriority(priority)"
+          >
+            <span class="size-4 text-brand">{{ task.priority === priority ? '✓' : '' }}</span>
             {{ label }}
           </button>
           <div class="my-1 border-t border-border" />

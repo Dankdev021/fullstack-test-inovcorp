@@ -9,7 +9,9 @@ import { useTask } from '../composables/useTask'
 import { ApiError } from '../services/api'
 import type {
   CreateTaskInput,
+  Task,
   TaskFilters,
+  TaskPriority,
   TaskStatus,
   ValidationErrors,
 } from '../types'
@@ -25,12 +27,16 @@ const {
   fetchTasks,
   createTask,
   updateTaskStatus,
+  updateTaskPriority,
   deleteTask,
 } = useTask()
 
 const project = computed(() => findProject(projectId.value))
 const taskLimitReached = computed(() => (project.value?.tasks_count ?? 0) >= 200)
 const modalOpen = ref(false)
+const deleteModalOpen = ref(false)
+const taskToDelete = ref<Task | null>(null)
+const deleting = ref(false)
 const submitting = ref(false)
 const validationErrors = ref<ValidationErrors>({})
 const filters = reactive<TaskFilters>({
@@ -127,6 +133,20 @@ async function changeStatus(taskId: number, status: TaskStatus): Promise<void> {
   }
 }
 
+async function changePriority(taskId: number, priority: TaskPriority): Promise<void> {
+  const task = tasks.value.find((item) => item.id === taskId)
+
+  if (!task || task.priority === priority) {
+    return
+  }
+
+  await updateTaskPriority(taskId, priority)
+
+  if (filters.priority) {
+    await fetchTasks(projectId.value, filters)
+  }
+}
+
 function startDragging(taskId: number, event: DragEvent): void {
   draggedTaskId.value = taskId
 
@@ -154,9 +174,39 @@ function clearFilters(): void {
   filters.priority = ''
 }
 
-async function removeTask(taskId: number): Promise<void> {
-  if (window.confirm('Deseja realmente excluir esta tarefa?')) {
-    await deleteTask(taskId)
+function askDeleteTask(taskId: number): void {
+  const task = tasks.value.find((item) => item.id === taskId)
+
+  if (!task || deleting.value) {
+    return
+  }
+
+  taskToDelete.value = task
+  deleteModalOpen.value = true
+}
+
+function closeDeleteModal(): void {
+  if (deleting.value) {
+    return
+  }
+
+  deleteModalOpen.value = false
+  taskToDelete.value = null
+}
+
+async function confirmDeleteTask(): Promise<void> {
+  if (!taskToDelete.value) {
+    return
+  }
+
+  deleting.value = true
+
+  try {
+    await deleteTask(taskToDelete.value.id)
+    deleteModalOpen.value = false
+    taskToDelete.value = null
+  } finally {
+    deleting.value = false
   }
 }
 
@@ -297,7 +347,8 @@ onBeforeUnmount(() => {
               @drag-end="stopDragging"
               @drop-task="dropTask"
               @change-status="changeStatus"
-              @delete-task="removeTask"
+              @change-priority="changePriority"
+              @delete-task="askDeleteTask"
             />
           </div>
         </div>
@@ -371,6 +422,39 @@ onBeforeUnmount(() => {
           </button>
         </div>
       </form>
+    </BaseModal>
+
+    <BaseModal :open="deleteModalOpen" title="Excluir tarefa" @close="closeDeleteModal">
+      <div class="space-y-5">
+        <p class="text-sm leading-6 text-muted">
+          Deseja realmente excluir a tarefa
+          <span class="font-semibold text-ink">{{ taskToDelete?.title }}</span>?
+          Esta ação não pode ser desfeita.
+        </p>
+
+        <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            class="btn-secondary"
+            :disabled="deleting"
+            @click="closeDeleteModal"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-danger px-4 py-2 text-sm font-semibold text-white transition hover:bg-danger/90 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="deleting"
+            @click="confirmDeleteTask"
+          >
+            <span
+              v-if="deleting"
+              class="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+            />
+            {{ deleting ? 'Excluindo...' : 'Excluir tarefa' }}
+          </button>
+        </div>
+      </div>
     </BaseModal>
   </main>
 </template>

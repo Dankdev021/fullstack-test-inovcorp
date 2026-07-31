@@ -8,8 +8,14 @@ import type {
   ResourceResponse,
   Task,
   TaskFilters,
+  TaskPriority,
   TaskStatus,
 } from '../types'
+
+type TaskUpdatePayload = {
+  status?: TaskStatus
+  priority?: TaskPriority
+}
 
 export function useTask() {
   const store = useProjectStore()
@@ -87,28 +93,40 @@ export function useTask() {
     }
   }
 
-  async function updateTaskStatus(taskId: number, status: TaskStatus): Promise<void> {
+  async function updateTask(taskId: number, payload: TaskUpdatePayload): Promise<void> {
     const index = store.tasks.findIndex((task) => task.id === taskId)
 
-    if (index < 0) {
+    if (index < 0 || (payload.status === undefined && payload.priority === undefined)) {
       return
     }
 
     const previous = { ...store.tasks[index] }
-    store.tasks[index] = { ...previous, status }
+    store.tasks[index] = { ...previous, ...payload }
     store.updatingTaskIds.push(taskId)
 
     try {
-      const response = await api.patch<ResourceResponse<Task>>(`/tasks/${taskId}`, { status })
+      const response = await api.patch<ResourceResponse<Task>>(`/tasks/${taskId}`, payload)
       store.tasks[index] = response.data
-      notifications.success('Status atualizado.')
+      notifications.success(payload.priority !== undefined && payload.status === undefined
+        ? 'Prioridade atualizada.'
+        : 'Status atualizado.')
     } catch (error) {
       store.tasks[index] = previous
-      const message = error instanceof ApiError ? error.message : 'Não foi possível atualizar o status.'
+      const message = error instanceof ApiError
+        ? error.message
+        : 'Não foi possível atualizar a tarefa.'
       notifications.error(`${message} A alteração foi desfeita.`)
     } finally {
       store.updatingTaskIds = store.updatingTaskIds.filter((id) => id !== taskId)
     }
+  }
+
+  async function updateTaskStatus(taskId: number, status: TaskStatus): Promise<void> {
+    await updateTask(taskId, { status })
+  }
+
+  async function updateTaskPriority(taskId: number, priority: TaskPriority): Promise<void> {
+    await updateTask(taskId, { priority })
   }
 
   async function deleteTask(taskId: number): Promise<void> {
@@ -145,7 +163,9 @@ export function useTask() {
     updatingTaskIds,
     fetchTasks,
     createTask,
+    updateTask,
     updateTaskStatus,
+    updateTaskPriority,
     deleteTask,
   }
 }

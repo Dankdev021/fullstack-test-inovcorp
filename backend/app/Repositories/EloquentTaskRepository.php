@@ -6,12 +6,15 @@ use App\Contracts\Repositories\TaskRepository;
 use App\DTOs\CreateTaskData;
 use App\DTOs\TaskFiltersData;
 use App\DTOs\UpdateTaskData;
+use App\Exceptions\TaskLimitExceededException;
 use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class EloquentTaskRepository implements TaskRepository
 {
+    private const MAX_TASKS_PER_PROJECT = 200;
+
     public function paginateForProject(Project $project, TaskFiltersData $filters): LengthAwarePaginator
     {
         return $project->tasks()
@@ -23,6 +26,10 @@ class EloquentTaskRepository implements TaskRepository
 
     public function create(Project $project, CreateTaskData $data): Task
     {
+        if ($project->tasks()->count() >= self::MAX_TASKS_PER_PROJECT) {
+            throw new TaskLimitExceededException;
+        }
+
         return $project->tasks()->create([
             'title' => $data->title,
             'description' => $data->description,
